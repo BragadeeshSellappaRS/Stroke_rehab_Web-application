@@ -1,0 +1,54 @@
+logsource: { category: process_creation, product: windows }
+detection:
+    selection:
+        Image: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+        CommandLine|contains: ['-enc', 'Invoke-Expression', 'IEX', 'New-Object System.Net.WebClient']
+    condition: selection
+level: high
+description: Detects suspicious PowerShell execution patterns that may indicate exploitation of TeamCity CVE-2023-42793.
+
+
+
+logsource: { category: network_connection, product: windows }
+detection:
+    selection:
+        DestinationIp|contains: ['192.168.1.1', '10.0.0.1', '8.8.8.8', '1.1.1.1']
+        DestinationPort: [8080, 8443, 443]
+    condition: selection
+level: medium
+description: Detects outbound network connections from TeamCity to suspicious IPs (could indicate C2 communication or exploitation attempts).
+
+
+
+logsource: { category: file_event, product: windows }
+detection:
+    selection:
+        TargetFilename|contains: ['C:\TeamCity\webapps\ROOT\shell.jsp', 'C:\TeamCity\bin\reverse_shell.exe']
+    condition: selection
+level: high
+description: Detects webshell or backdoor file creation in TeamCity's web application directory.
+
+
+
+logsource: { category: authentication, product: windows }
+detection:
+    selection:
+        EventID: 4625
+        FailureReason: '%2313'
+        AccountName|startswith: 'admin_'
+    condition: selection
+level: medium
+description: Detects failed authentication attempts that may indicate unauthorized access or brute-force attempts on TeamCity.
+
+
+
+
+logsource: { category: process_creation, product: windows }
+detection:
+    selection:
+        Image|endswith: ['.vbs', '.js', '.exe']
+        ParentImage|contains: 'cmd.exe'
+        CommandLine|contains: ['mshta', 'wscript', 'cscript']
+    condition: selection
+level: high
+description: Detects suspicious script execution from command prompt, which may indicate an attacker executing malicious scripts after TeamCity exploitation.
